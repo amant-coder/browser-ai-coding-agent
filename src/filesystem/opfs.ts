@@ -50,6 +50,8 @@ export class OPFSManager {
         dir = await dir.getDirectoryHandle(part)
       }
     }
+    // FileSystemDirectoryHandle is async-iterable but TypeScript's DOM lib types don't include
+    // the Symbol.asyncIterator overload, so we cast to the known runtime shape.
     for await (const [name, handle] of (dir as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
       if (handle.kind === 'file') {
         files.push(dirPath ? `${dirPath}/${name}` : name)

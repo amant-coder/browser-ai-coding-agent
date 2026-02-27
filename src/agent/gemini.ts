@@ -5,6 +5,9 @@ export interface GeminiMessage {
   parts: { text: string }[]
 }
 
+// Flash model: fast and cost-effective for agentic coding tasks.
+const DEFAULT_MODEL = 'gemini-1.5-flash'
+
 export class GeminiClient {
   private genAI: GoogleGenerativeAI | null = null
   private model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
@@ -12,7 +15,7 @@ export class GeminiClient {
   init(apiKey: string): void {
     this.genAI = new GoogleGenerativeAI(apiKey)
     this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: DEFAULT_MODEL,
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,

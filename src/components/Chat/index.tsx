@@ -44,6 +44,10 @@ export function ChatPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    await submitMessage()
+  }
+
+  const submitMessage = async () => {
     if (!input.trim() || isAgentRunning) return
     const msg = input.trim()
     setInput('')
@@ -53,7 +57,7 @@ export function ChatPanel() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSubmit(e as unknown as React.FormEvent)
+      submitMessage()
     }
   }
 
