@@ -42,7 +42,6 @@ export class OPFSManager {
 
   async listFiles(dirPath = ''): Promise<string[]> {
     if (!this.root) throw new Error('OPFS not initialized')
-    const files: string[] = []
     let dir: FileSystemDirectoryHandle = this.root
     if (dirPath) {
       const parts = dirPath.split('/').filter(Boolean)
@@ -50,11 +49,20 @@ export class OPFSManager {
         dir = await dir.getDirectoryHandle(part)
       }
     }
+    return this._listRecursive(dir, dirPath)
+  }
+
+  private async _listRecursive(dir: FileSystemDirectoryHandle, prefix: string): Promise<string[]> {
+    const files: string[] = []
     // FileSystemDirectoryHandle is async-iterable but TypeScript's DOM lib types don't include
     // the Symbol.asyncIterator overload, so we cast to the known runtime shape.
     for await (const [name, handle] of (dir as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
+      const fullPath = prefix ? `${prefix}/${name}` : name
       if (handle.kind === 'file') {
-        files.push(dirPath ? `${dirPath}/${name}` : name)
+        files.push(fullPath)
+      } else if (handle.kind === 'directory') {
+        const subFiles = await this._listRecursive(handle as FileSystemDirectoryHandle, fullPath)
+        files.push(...subFiles)
       }
     }
     return files
