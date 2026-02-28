@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { CodeIcon, SunIcon, MoonIcon } from 'lucide-react'
 import { FileTree } from '@/components/FileTree'
 import { CodeEditor } from '@/components/Editor'
 import { Terminal } from '@/components/Terminal'
 import { ChatPanel } from '@/components/Chat'
+import { Preview } from '@/components/Preview'
 import { useStore } from '@/store'
 import { cn } from '@/lib/utils'
 
@@ -28,6 +30,7 @@ const STATUS_DOT: Record<string, string> = {
 export function Layout() {
   const { agentState, theme, setTheme } = useStore()
   const status = agentState.status
+  const [bottomTab, setBottomTab] = useState<'terminal' | 'preview'>('terminal')
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -77,7 +80,33 @@ export function Layout() {
               </Panel>
               <PanelResizeHandle className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
               <Panel defaultSize={35} minSize={20}>
-                <Terminal />
+                <div className="h-full flex flex-col">
+                  {/* Tab bar */}
+                  <div className="flex items-center border-b bg-muted/30 flex-shrink-0">
+                    <button
+                      onClick={() => setBottomTab('terminal')}
+                      className={cn(
+                        'px-3 py-1.5 text-xs font-medium border-r',
+                        bottomTab === 'terminal' ? 'bg-background text-foreground' : 'text-muted-foreground hover:bg-muted'
+                      )}
+                    >
+                      Terminal
+                    </button>
+                    <button
+                      onClick={() => setBottomTab('preview')}
+                      className={cn(
+                        'px-3 py-1.5 text-xs font-medium',
+                        bottomTab === 'preview' ? 'bg-background text-foreground' : 'text-muted-foreground hover:bg-muted'
+                      )}
+                    >
+                      Preview
+                    </button>
+                  </div>
+                  {/* Panel content */}
+                  <div className="flex-1 overflow-hidden">
+                    {bottomTab === 'terminal' ? <Terminal /> : <Preview />}
+                  </div>
+                </div>
               </Panel>
             </PanelGroup>
           </Panel>
