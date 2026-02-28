@@ -3,8 +3,9 @@ import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { pyodideSandbox } from '@/sandbox/pyodide'
+import { webContainerSandbox } from '@/sandbox/webcontainer'
 
-const WELCOME_MESSAGE = '\r\n\x1b[1;32mBrowser AI Coding Agent Terminal\x1b[0m\r\n\x1b[90mType Python code and press Enter to run. Type "clear" to clear.\x1b[0m\r\n\r\n$ '
+const WELCOME_MESSAGE = '\r\n\x1b[1;32mBrowser AI Coding Agent Terminal\x1b[0m\r\n\x1b[90mType Python code or "js: <code>" for JavaScript. Type "clear" to clear.\x1b[0m\r\n\r\n$ '
 
 export function Terminal() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -64,13 +65,24 @@ export function Terminal() {
         }
 
         if (command) {
-          pyodideSandbox.run(command).then((result) => {
-            if (result.stdout) term.write('\x1b[32m' + result.stdout.replace(/\n/g, '\r\n') + '\x1b[0m')
-            if (result.stderr) term.write('\x1b[31m' + result.stderr.replace(/\n/g, '\r\n') + '\x1b[0m')
-            term.write('\r\n$ ')
-          }).catch((err) => {
-            term.write('\x1b[31m' + String(err) + '\x1b[0m\r\n$ ')
-          })
+          if (command.startsWith('js:')) {
+            const jsCode = command.slice(3).trim()
+            webContainerSandbox.runJS(jsCode).then((result) => {
+              if (result.stdout) term.write('\x1b[32m' + result.stdout.replace(/\n/g, '\r\n') + '\x1b[0m')
+              if (result.stderr) term.write('\x1b[31m' + result.stderr.replace(/\n/g, '\r\n') + '\x1b[0m')
+              term.write('\r\n$ ')
+            }).catch((err) => {
+              term.write('\x1b[31m' + String(err) + '\x1b[0m\r\n$ ')
+            })
+          } else {
+            pyodideSandbox.run(command).then((result) => {
+              if (result.stdout) term.write('\x1b[32m' + result.stdout.replace(/\n/g, '\r\n') + '\x1b[0m')
+              if (result.stderr) term.write('\x1b[31m' + result.stderr.replace(/\n/g, '\r\n') + '\x1b[0m')
+              term.write('\r\n$ ')
+            }).catch((err) => {
+              term.write('\x1b[31m' + String(err) + '\x1b[0m\r\n$ ')
+            })
+          }
         } else {
           term.write('$ ')
         }

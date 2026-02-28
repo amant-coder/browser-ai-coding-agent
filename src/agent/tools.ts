@@ -99,4 +99,36 @@ export const agentTools = {
       return { success: false, output: '', error: err instanceof Error ? err.message : String(err) }
     }
   },
+
+  async install_package(name: string, manager: 'pip' | 'npm' = 'pip'): Promise<ToolResult> {
+    try {
+      if (manager === 'pip') {
+        await pyodideSandbox.installPackage(name)
+        return { success: true, output: `Installed Python package: ${name}` }
+      } else {
+        return {
+          success: false,
+          output: '',
+          error: 'npm install is not supported in browser-only mode. Use pip packages instead.',
+        }
+      }
+    } catch (err) {
+      return { success: false, output: '', error: err instanceof Error ? err.message : String(err) }
+    }
+  },
+
+  async search_web(query: string): Promise<ToolResult> {
+    try {
+      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
+      const res = await fetch(url)
+      const data = await res.json()
+      const answer =
+        data.AbstractText ||
+        (data.RelatedTopics?.[0]?.Text) ||
+        'No results found.'
+      return { success: true, output: answer }
+    } catch (err) {
+      return { success: false, output: '', error: `Web search failed: ${err instanceof Error ? err.message : String(err)}` }
+    }
+  },
 }
