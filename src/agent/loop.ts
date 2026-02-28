@@ -11,6 +11,8 @@ You have access to these tools:
 - list_files(): List all files in the project
 - run_python(code): Execute Python code
 - run_javascript(code): Execute JavaScript code
+- install_package(name, manager): Install a Python (pip) package. manager defaults to "pip".
+- search_web(query): Search the web for documentation or answers using DuckDuckGo.
 
 When using tools, respond with JSON in this exact format:
 {"tool": "tool_name", "args": {"arg1": "value1", "arg2": "value2"}}
@@ -60,7 +62,7 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
       if (!parsed) {
         const step: AgentStep = {
           id: `step-${Date.now()}`,
-          type: 'observation',
+          type: 'plan',
           content: response,
           timestamp: new Date(),
         }
@@ -98,6 +100,10 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
           result = await agentTools.run_python(args.code)
         } else if (parsed.tool === 'run_javascript') {
           result = await agentTools.run_javascript(args.code)
+        } else if (parsed.tool === 'install_package') {
+          result = await agentTools.install_package(args.name, args.manager as 'pip' | 'npm')
+        } else if (parsed.tool === 'search_web') {
+          result = await agentTools.search_web(args.query)
         } else {
           result = { success: false, output: '', error: `Unknown tool: ${parsed.tool}` }
         }

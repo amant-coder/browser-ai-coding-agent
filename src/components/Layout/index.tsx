@@ -1,5 +1,5 @@
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
-import { CodeIcon } from 'lucide-react'
+import { CodeIcon, SunIcon, MoonIcon } from 'lucide-react'
 import { FileTree } from '@/components/FileTree'
 import { CodeEditor } from '@/components/Editor'
 import { Terminal } from '@/components/Terminal'
@@ -26,7 +26,7 @@ const STATUS_DOT: Record<string, string> = {
 }
 
 export function Layout() {
-  const { agentState } = useStore()
+  const { agentState, theme, setTheme } = useStore()
   const status = agentState.status
 
   return (
@@ -47,6 +47,13 @@ export function Layout() {
             <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status] ?? 'bg-green-400')}></span>
             {STATUS_LABEL[status] ?? 'Ready'}
           </span>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-muted"
+            title="Toggle theme"
+          >
+            {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+          </button>
         </div>
       </header>
 
