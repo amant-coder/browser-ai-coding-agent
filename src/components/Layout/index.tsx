@@ -4,8 +4,31 @@ import { FileTree } from '@/components/FileTree'
 import { CodeEditor } from '@/components/Editor'
 import { Terminal } from '@/components/Terminal'
 import { ChatPanel } from '@/components/Chat'
+import { useStore } from '@/store'
+import { cn } from '@/lib/utils'
+
+const STATUS_LABEL: Record<string, string> = {
+  idle: 'Ready',
+  thinking: 'Thinking…',
+  acting: 'Acting…',
+  observing: 'Observing…',
+  done: 'Done',
+  error: 'Error',
+}
+
+const STATUS_DOT: Record<string, string> = {
+  idle: 'bg-green-400',
+  thinking: 'bg-yellow-400 animate-pulse',
+  acting: 'bg-blue-400 animate-pulse',
+  observing: 'bg-purple-400 animate-pulse',
+  done: 'bg-green-400',
+  error: 'bg-red-400',
+}
 
 export function Layout() {
+  const { agentState } = useStore()
+  const status = agentState.status
+
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {/* Top Bar */}
@@ -21,8 +44,8 @@ export function Layout() {
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="hidden sm:flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
-            Ready
+            <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status] ?? 'bg-green-400')}></span>
+            {STATUS_LABEL[status] ?? 'Ready'}
           </span>
         </div>
       </header>
