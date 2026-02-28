@@ -7,6 +7,7 @@ declare global {
 interface PyodideInterface {
   runPythonAsync: (code: string) => Promise<unknown>
   loadPackagesFromImports: (code: string) => Promise<void>
+  loadPackage: (name: string) => Promise<void>
   globals: { get: (key: string) => unknown }
 }
 
@@ -75,6 +76,17 @@ finally:
         result: null,
       }
     }
+  }
+
+  /** Alias for `run` — satisfies the `runCode` interface required by the problem spec. */
+  async runCode(code: string): Promise<{ stdout: string; stderr: string; result: unknown }> {
+    return this.run(code)
+  }
+
+  async installPackage(name: string): Promise<void> {
+    if (!this.pyodide) await this.init()
+    if (!this.pyodide) throw new Error('Pyodide not loaded')
+    await this.pyodide.loadPackage(name)
   }
 }
 
