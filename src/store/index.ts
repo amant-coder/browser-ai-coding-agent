@@ -45,7 +45,7 @@ export const useStore = create<AppState>((set) => ({
   messages: [],
   isAgentRunning: false,
   agentState: { status: 'idle', steps: [] },
-  apiKey: localStorage.getItem('gemini_api_key') || '',
+  apiKey: localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '',
   theme: 'dark',
 
   setFiles: (files) => set({ files }),
