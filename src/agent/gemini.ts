@@ -1,56 +1,53 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+/**
+ * GeminiClient — communicates with the Spring Boot backend instead of calling
+ * the Gemini API directly from the browser. This keeps the API key server-side
+ * and avoids exposing it in the client bundle.
+ */
 
 export interface GeminiMessage {
   role: 'user' | 'model'
   parts: { text: string }[]
 }
 
-// Flash model: fast and cost-effective for agentic coding tasks.
-const DEFAULT_MODEL = 'gemini-1.5-flash'
+const BACKEND_URL =
+  (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8080'
 
 export class GeminiClient {
-  private genAI: GoogleGenerativeAI | null = null
-  private model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
+  private _initialized = false
 
-  init(apiKey: string): void {
-    this.genAI = new GoogleGenerativeAI(apiKey)
-    this.model = this.genAI.getGenerativeModel({
-      model: DEFAULT_MODEL,
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.8,
-        maxOutputTokens: 8192,
-      },
-    })
+  /**
+   * Mark the client as ready. With the Spring Boot backend the API key is
+   * managed server-side, so no local key setup is required. The method is kept
+   * for API compatibility with existing callers in loop.ts.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  init(_apiKey: string): void {
+    this._initialized = true
   }
 
   async chat(messages: GeminiMessage[], systemPrompt?: string): Promise<string> {
-    if (!this.model) throw new Error('Gemini not initialized. Please set your API key.')
-
-    const history = messages.slice(0, -1)
-    const lastMessage = messages[messages.length - 1]
-
-    const chat = this.model.startChat({
-      history,
-      systemInstruction: systemPrompt,
+    const response = await fetch(`${BACKEND_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, systemPrompt: systemPrompt ?? null }),
     })
 
-    const result = await chat.sendMessage(lastMessage.parts[0].text)
-    const response = await result.response
-    return response.text()
+    if (!response.ok) {
+      const detail = await response.text()
+      throw new Error(`Backend chat error (${response.status}): ${detail}`)
+    }
+
+    const data = (await response.json()) as { text: string }
+    return data.text
   }
 
   async generate(prompt: string, systemPrompt?: string): Promise<string> {
-    if (!this.model) throw new Error('Gemini not initialized. Please set your API key.')
-
-    const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt
-    const result = await this.model.generateContent(fullPrompt)
-    const response = await result.response
-    return response.text()
+    const message: GeminiMessage = { role: 'user', parts: [{ text: prompt }] }
+    return this.chat([message], systemPrompt)
   }
 
   isInitialized(): boolean {
-    return this.model !== null
+    return this._initialized
   }
 }
 

@@ -119,14 +119,17 @@ export const agentTools = {
 
   async search_web(query: string): Promise<ToolResult> {
     try {
-      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
-      const res = await fetch(url)
-      const data = await res.json()
-      const answer =
-        data.AbstractText ||
-        (data.RelatedTopics?.[0]?.Text) ||
-        'No results found.'
-      return { success: true, output: answer }
+      const backendUrl =
+        (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8080'
+      const res = await fetch(
+        `${backendUrl}/api/search?q=${encodeURIComponent(query)}`,
+      )
+      if (!res.ok) {
+        const detail = await res.text()
+        throw new Error(`Search API error (${res.status}): ${detail}`)
+      }
+      const data = (await res.json()) as { result: string }
+      return { success: true, output: data.result }
     } catch (err) {
       return { success: false, output: '', error: `Web search failed: ${err instanceof Error ? err.message : String(err)}` }
     }
