@@ -36,9 +36,10 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
   const store = useStore.getState()
 
   if (!geminiClient.isInitialized()) {
-    const apiKey = store.apiKey
-    if (!apiKey) throw new Error('No API key set. Please add your Gemini API key in Settings.')
-    geminiClient.init(apiKey)
+    // With the Spring Boot backend the API key is managed server-side.
+    // We pass an empty string here to mark the client as ready; the actual
+    // key is never sent to the browser.
+    geminiClient.init(store.apiKey || '')
   }
 
   store.setIsAgentRunning(true)
