@@ -2,6 +2,13 @@ import { geminiClient } from './gemini'
 import { agentTools } from './tools'
 import { useStore } from '@/store'
 import type { AgentStep } from '@/types'
+import { useCreditsStore } from '@/store/creditsStore'
+
+// Credit costs — kept in sync with backend CreditCosts.java
+const PLAN_COST     = 2
+const ACT_COST      = 3
+const OBSERVE_COST  = 1
+const WEB_SEARCH_COST = 2
 
 const SYSTEM_PROMPT = `You are an expert AI coding assistant. You help users write, debug, and understand code.
 
@@ -54,6 +61,9 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
     for (let i = 0; i < maxSteps; i++) {
       store.setAgentState({ status: 'thinking', steps })
 
+      // Deduct PLAN credit for each thinking step (non-blocking — only if authenticated)
+      await useCreditsStore.getState().deductCredits('PLAN', PLAN_COST)
+
       const response = await geminiClient.chat(conversationHistory, SYSTEM_PROMPT)
 
       conversationHistory.push({ role: 'model', parts: [{ text: response }] })
@@ -88,6 +98,9 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
         steps.push(actionStep)
         store.setAgentState({ status: 'acting', steps })
 
+        // Deduct ACT credit
+        await useCreditsStore.getState().deductCredits('ACT', ACT_COST)
+
         let result
         const args = parsed.args || {}
 
@@ -105,6 +118,8 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
           result = await agentTools.install_package(args.name, args.manager as 'pip' | 'npm')
         } else if (parsed.tool === 'search_web') {
           result = await agentTools.search_web(args.query)
+          // Deduct WEB_SEARCH credit
+          await useCreditsStore.getState().deductCredits('WEB_SEARCH', WEB_SEARCH_COST)
         } else {
           result = { success: false, output: '', error: `Unknown tool: ${parsed.tool}` }
         }
@@ -117,6 +132,9 @@ export async function runAgentLoop(userMessage: string, maxSteps = 10): Promise<
           timestamp: new Date(),
         }
         steps.push(observationStep)
+
+        // Deduct OBSERVE credit
+        await useCreditsStore.getState().deductCredits('OBSERVE', OBSERVE_COST)
 
         conversationHistory.push({
           role: 'user',
