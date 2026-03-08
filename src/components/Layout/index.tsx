@@ -8,6 +8,8 @@ import { ChatPanel } from '@/components/Chat'
 import { Preview } from '@/components/Preview'
 import { useStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { UserAvatarOrLogin } from '@/components/Auth/UserAvatar'
+import { CreditBadge } from '@/components/Credits/CreditBadge'
 
 const STATUS_LABEL: Record<string, string> = {
   idle: 'Ready',
@@ -50,6 +52,8 @@ export function Layout() {
             <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status] ?? 'bg-green-400')}></span>
             {STATUS_LABEL[status] ?? 'Ready'}
           </span>
+          <CreditBadge />
+          <UserAvatarOrLogin />
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="h-7 w-7 flex items-center justify-center rounded hover:bg-muted"

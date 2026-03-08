@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { RefreshCwIcon, ExternalLinkIcon } from 'lucide-react'
+import { RefreshCwIcon } from 'lucide-react'
 import { useStore } from '@/store'
 import type { FileNode } from '@/types'
+import { PreviewToolbar } from './PreviewToolbar'
+import { DeployModal } from './DeployModal'
 
 function buildSrcDoc(files: FileNode[]): string {
   const htmlFile =
@@ -40,10 +42,34 @@ export function Preview() {
   const { files } = useStore()
   const [srcDoc, setSrcDoc] = useState('')
   const [key, setKey] = useState(0)
+  const [deployOpen, setDeployOpen] = useState(false)
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+
+  // Revoke blob URL on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      setBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+    }
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSrcDoc(buildSrcDoc(files))
+      const doc = buildSrcDoc(files)
+      setSrcDoc(doc)
+      // Create a blob URL for the preview so it can be shared
+      if (doc) {
+        const blob = new Blob([doc], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        setBlobUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev)
+          return url
+        })
+      } else {
+        setBlobUrl(null)
+      }
     }, 500)
     return () => clearTimeout(timer)
   }, [files])
@@ -51,34 +77,32 @@ export function Preview() {
   const handleRefresh = () => setKey((k) => k + 1)
 
   const handleOpenInNewTab = () => {
-    const blob = new Blob([srcDoc], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
-    setTimeout(() => URL.revokeObjectURL(url), 10000)
+    if (blobUrl) {
+      window.open(blobUrl, '_blank', 'noopener,noreferrer')
+    }
   }
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Header */}
+      {/* Header row with refresh */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preview</span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleRefresh}
-            className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted"
-            title="Refresh"
-          >
-            <RefreshCwIcon className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={handleOpenInNewTab}
-            className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted"
-            title="Open in new tab"
-          >
-            <ExternalLinkIcon className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <button
+          onClick={handleRefresh}
+          className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted"
+          title="Refresh"
+        >
+          <RefreshCwIcon className="h-3.5 w-3.5" />
+        </button>
       </div>
+
+      {/* Toolbar with URL, share, open, deploy */}
+      <PreviewToolbar
+        previewUrl={blobUrl}
+        onOpenNewTab={handleOpenInNewTab}
+        onDeploy={() => setDeployOpen(true)}
+      />
+
       {/* iframe or placeholder */}
       {srcDoc ? (
         <iframe
@@ -99,6 +123,8 @@ export function Preview() {
           </div>
         </div>
       )}
+
+      <DeployModal open={deployOpen} onClose={() => setDeployOpen(false)} />
     </div>
   )
 }
